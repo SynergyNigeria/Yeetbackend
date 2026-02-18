@@ -3,7 +3,7 @@ services:
     name: yeet-bank-backend
     runtime: python
     buildCommand: "./build.sh"
-    startCommand: "daphne -b 0.0.0.0 -p $PORT yeet_bank.asgi:application"
+    startCommand: "DJANGO_SETTINGS_MODULE=yeet_bank.settings daphne -b 0.0.0.0 -p $PORT yeet_bank.asgi:application"
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
