@@ -18,9 +18,16 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import JsonResponse
 from transactions import views as transaction_views
 
+def health_check(request):
+    """Simple health check endpoint for monitoring"""
+    return JsonResponse({'status': 'ok', 'message': 'YEET Bank API is running'})
+
 urlpatterns = [
+    path('', health_check, name='health-check'),  # Root health check
+    path('health/', health_check, name='health'),  # Alternative health check
     path('admin/', admin.site.urls),
     path('api/', include('accounts.urls')),
     path('api/transactions/', include('transactions.urls')),  # Updated path

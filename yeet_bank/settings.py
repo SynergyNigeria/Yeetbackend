@@ -11,6 +11,11 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,16 +25,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-5uhl6^p$!^g*7zt16r0e2*y^5szs0=kb$80&=%rfhqot86$9u*'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-5uhl6^p$!^g*7zt16r0e2*y^5szs0=kb$80&=%rfhqot86$9u*')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    '6pcn1n3b-8000.uks1.devtunnels.ms',
-]
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 
 # Application definition
@@ -57,6 +58,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Add whitenoise for static files
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -132,25 +134,29 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Whitenoise settings for static files
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 # Media files (User uploads)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # CORS settings
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "https://6pcn1n3b-3000.uks1.devtunnels.ms",
-]
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000').split(',')
 
 CORS_ALLOW_CREDENTIALS = True
 
 # CSRF settings for HTTPS
-CSRF_TRUSTED_ORIGINS = [
-    "https://6pcn1n3b-3000.uks1.devtunnels.ms",
-    "https://6pcn1n3b-8000.uks1.devtunnels.ms",
-]
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000').split(',')
 
 # REST Framework settings
 REST_FRAMEWORK = {
@@ -181,14 +187,14 @@ ASGI_APPLICATION = 'yeet_bank.asgi.application'
 AUTH_USER_MODEL = 'accounts.User'
 
 # Push Notification Settings (VAPID)
-VAPID_PRIVATE_KEY = """-----BEGIN PRIVATE KEY-----
+VAPID_PRIVATE_KEY = os.getenv('VAPID_PRIVATE_KEY', """-----BEGIN PRIVATE KEY-----
 MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgIuOdF1awT1XX0euH
 6n6IY04j+GxrPJCFJ5SQ++4B2ZKhRANCAATabJGGoXpI82V3XY/6drEHpgFC3+EF
 CpZq08+LLBaC/TjQtbuwiM63PU/GDwdF3U1Yc++I/wcXRmHpetmTrM4S
------END PRIVATE KEY-----"""
+-----END PRIVATE KEY-----""")
 
-VAPID_PUBLIC_KEY = "BNpskYahekjzZXddj_p2sQemAULf4QUKlmrTz4ssFoL9ONC1u7CIzrc9T8YPB0XdTVhz74j_BxdGYel62ZOszhI"
+VAPID_PUBLIC_KEY = os.getenv('VAPID_PUBLIC_KEY', "BNpskYahekjzZXddj_p2sQemAULf4QUKlmrTz4ssFoL9ONC1u7CIzrc9T8YPB0XdTVhz74j_BxdGYel62ZOszhI")
 
 VAPID_CLAIMS = {
-    "sub": "mailto:admin@yeetbank.com"
+    "sub": os.getenv('VAPID_EMAIL', "mailto:admin@yeetbank.com")
 }
