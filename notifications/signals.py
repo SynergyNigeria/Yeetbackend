@@ -3,7 +3,7 @@ from django.dispatch import receiver
 
 @receiver(post_save, sender='accounts.User')
 def create_welcome_notifications(sender, instance, created, **kwargs):
-    """Create welcome notifications for new users"""
+    """Create welcome notifications and send welcome email for new users"""
     
     if created:
         # Import here to avoid app registry issues
@@ -32,6 +32,13 @@ def create_welcome_notifications(sender, instance, created, **kwargs):
             message='Your account is set up and ready! Add money to start sending and receiving with YEET Bank. Tap "Add Money" on your dashboard.',
             notification_type='ACCOUNT'
         )
+
+        # Send welcome email
+        try:
+            from accounts.email_utils import send_welcome_email
+            send_welcome_email(instance)
+        except Exception:
+            pass  # Email failure must never block registration
 
 @receiver(post_save, sender='transactions.Transaction')
 def create_transaction_notification(sender, instance, created, **kwargs):

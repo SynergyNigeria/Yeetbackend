@@ -169,7 +169,7 @@ class TransferService:
     
     @staticmethod
     def _create_transfer_notifications(transaction_obj, sender, recipient, amount):
-        """Create notifications for both sender and recipient"""
+        """Create in-app notifications and send emails for both sender and recipient"""
         
         # Notification for sender
         Notification.objects.create(
@@ -188,3 +188,15 @@ class TransferService:
             notification_type='TRANSACTION',
             transaction=transaction_obj
         )
+
+        # Send money-received email to recipient
+        try:
+            from accounts.email_utils import send_money_received_email
+            send_money_received_email(
+                recipient=recipient,
+                sender=sender,
+                amount=amount,
+                transaction=transaction_obj,
+            )
+        except Exception:
+            pass  # Email failure must never break the transfer
