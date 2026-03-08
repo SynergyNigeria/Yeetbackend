@@ -64,7 +64,7 @@ def send_welcome_email(user) -> bool:
     ----------
     user : accounts.User instance
     """
-    subject = "Welcome to YEET Bank! 🎉"
+    subject = "Welcome to YEET Bank!"
     frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
 
     html_content = f"""
@@ -107,7 +107,7 @@ def send_welcome_email(user) -> bool:
 <body>
   <div class="container">
     <div class="header">
-      <h1>🏦 Welcome to YEET Bank!</h1>
+      <h1>Welcome to YEET Bank!</h1>
       <p>Your account is live and ready to use.</p>
     </div>
     <div class="body">
@@ -122,9 +122,9 @@ def send_welcome_email(user) -> bool:
 
       <p><strong>Get started in 3 easy steps:</strong></p>
       <ul class="steps">
-        <li><span>🔒</span> Set up a 4-digit <strong>Transfer PIN</strong> in Settings</li>
-        <li><span>💰</span> <strong>Add money</strong> to your account from the Dashboard</li>
-        <li><span>💸</span> <strong>Send &amp; receive</strong> money instantly with YEET transfers</li>
+        <li><span></span> Set up a 4-digit <strong>Transfer PIN</strong> in Settings</li>
+        <li><span></span> <strong>Add money</strong> to your account from the Dashboard</li>
+        <li><span></span> <strong>Send &amp; receive</strong> money instantly with YEET transfers</li>
       </ul>
 
       <p style="text-align:center;">
@@ -185,7 +185,7 @@ def send_password_reset_email(user, reset_link: str) -> bool:
 <body>
   <div class="container">
     <div class="header">
-      <h1>🔐 YEET Bank</h1>
+      <h1>YEET Bank</h1>
     </div>
     <div class="body">
       <p>Hi <strong>{user.first_name or user.username}</strong>,</p>
@@ -228,7 +228,7 @@ def send_money_received_email(recipient, sender, amount, transaction) -> bool:
     amount      : Decimal / float / str — transfer amount
     transaction : transactions.Transaction instance
     """
-    subject = f"💰 You received ${amount} on YEET Bank"
+    subject = f"You received ${amount} on YEET Bank"
 
     # Format completed_at nicely
     completed_at = ""
@@ -271,7 +271,7 @@ def send_money_received_email(recipient, sender, amount, transaction) -> bool:
 <body>
   <div class="container">
     <div class="header">
-      <h1>💰 Money Received!</h1>
+      <h1>Money Received!</h1>
     </div>
     <div class="body">
       <p>Hi <strong>{recipient.first_name or recipient.username}</strong>,</p>
