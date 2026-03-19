@@ -79,7 +79,7 @@ class User(AbstractUser):
             return False, "Account not verified. Please verify your email and phone."
         
         if not self.has_deposit:
-            return False, "Please make an initial deposit to activate transfers."
+            return False, "Your account is pending activation. Please contact support to fund your account and activate transfers."
         
         if not self.has_set_transfer_pin:
             return False, "Please set up your transfer PIN in Settings."
