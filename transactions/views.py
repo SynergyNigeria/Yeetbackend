@@ -142,20 +142,44 @@ class TransactionViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Validate transfer PIN (unless prime account)
-            if not user.is_prime:
-                if not transfer_pin:
-                    return Response(
-                        {'error': 'Transfer PIN is required'}, 
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-                
-                if not user.check_transfer_pin(transfer_pin):
-                    return Response(
-                        {'error': 'Invalid transfer PIN'}, 
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-            
+            # Validate transfer PIN — always required, no exceptions
+            if not transfer_pin:
+                return Response(
+                    {'error': 'Transfer PIN is required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if not user.check_transfer_pin(transfer_pin):
+                Notification.objects.create(
+                    user=user,
+                    title='⚠️ Failed Transfer Attempt',
+                    message='A wire transfer was attempted with an incorrect PIN. If this was not you, change your PIN immediately in Settings.',
+                    notification_type='SECURITY'
+                )
+                return Response(
+                    {'error': 'Invalid transfer PIN'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Validate sender IFSC code — checked after PIN
+            if not sender_ifsc:
+                return Response(
+                    {'error': 'Your IFSC code is required to authorise wire transfers. You can find it on your Dashboard or Settings.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if sender_ifsc != (user.ifsc_code or '').upper():
+                Notification.objects.create(
+                    user=user,
+                    title='⚠️ Failed Wire Transfer — Wrong IFSC',
+                    message='A wire transfer failed due to an incorrect IFSC code. Find your IFSC code on your Dashboard or Settings page.',
+                    notification_type='SECURITY'
+                )
+                return Response(
+                    {'error': 'Invalid IFSC code. Your IFSC code can be found on your Dashboard or Settings page.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
             # Calculate total with wire fee
             wire_fee = Decimal('15.00')  # Wire transfer fee
             total_amount = amount + wire_fee

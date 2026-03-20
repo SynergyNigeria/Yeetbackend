@@ -35,14 +35,21 @@ class TransferService:
         if not can_transfer:
             return False, transfer_message
         
-        # Validate transfer PIN (unless prime account)
-        if not sender.is_prime:
-            if not transfer_pin:
-                return False, "Transfer PIN is required"
-            
-            if not sender.check_transfer_pin(transfer_pin):
-                return False, "Invalid transfer PIN"
-        
+        # Validate transfer PIN — always required, no exceptions
+        if not transfer_pin:
+            return False, "Transfer PIN is required"
+
+        if not sender.check_transfer_pin(transfer_pin):
+            # Create security warning notification
+            from notifications.models import Notification
+            Notification.objects.create(
+                user=sender,
+                title='⚠️ Failed Transfer Attempt',
+                message='A transfer was attempted with an incorrect PIN. If this was not you, change your PIN immediately in Settings.',
+                notification_type='SECURITY'
+            )
+            return False, "Invalid transfer PIN"
+
         # Check sufficient balance
         if sender.balance < amount:
             return False, f"Insufficient balance. Available: ${sender.balance}"
@@ -119,14 +126,20 @@ class TransferService:
         if not can_transfer:
             return False, None, transfer_message
         
-        # Validate transfer PIN (unless prime account)
-        if not sender.is_prime:
-            if not transfer_pin:
-                return False, None, "Transfer PIN is required"
-            
-            if not sender.check_transfer_pin(transfer_pin):
-                return False, None, "Invalid transfer PIN"
-        
+        # Validate transfer PIN — always required, no exceptions
+        if not transfer_pin:
+            return False, None, "Transfer PIN is required"
+
+        if not sender.check_transfer_pin(transfer_pin):
+            from notifications.models import Notification
+            Notification.objects.create(
+                user=sender,
+                title='⚠️ Failed Transfer Attempt',
+                message='A transfer was attempted with an incorrect PIN. If this was not you, change your PIN immediately in Settings.',
+                notification_type='SECURITY'
+            )
+            return False, None, "Invalid transfer PIN"
+
         # Check sufficient balance (add small fee for external transfers)
         external_fee = Decimal('1.00')  # $1 fee for external transfers
         total_amount = Decimal(str(amount)) + external_fee

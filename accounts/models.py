@@ -16,6 +16,8 @@ class User(AbstractUser):
     
     # Banking-specific fields
     account_number = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    ifsc_code = models.CharField(max_length=20, unique=True, blank=True, null=True, help_text="IFSC code for wire transfers")
+    ifsc_verified = models.BooleanField(default=False, help_text="Admin has verified the user's IFSC code")
     balance = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
     transfer_pin = models.CharField(max_length=255, blank=True, null=True, help_text="Encrypted transfer PIN")
     
@@ -42,15 +44,28 @@ class User(AbstractUser):
                 if not User.objects.filter(account_number=account_num).exists():
                     self.account_number = account_num
                     break
+
+        # Generate IFSC code if not exists: YEET + 7 random digits
+        if not self.ifsc_code:
+            import string
+            while True:
+                suffix = ''.join(random.choices(string.digits, k=7))
+                code = f'YEET{suffix}'
+                if not User.objects.filter(ifsc_code=code).exists():
+                    self.ifsc_code = code
+                    break
         
-        # Set default transfer PIN of 1234 for new users
         is_new_user = self.pk is None
-        
+
         super().save(*args, **kwargs)
-        
+
         if is_new_user and not self.transfer_pin:
-            self.transfer_pin = '1234'
-            self.has_set_transfer_pin = True
+            # Don't set a default PIN — user must set their own in Settings
+            # Mark as NOT set so PIN validation blocks transfers until user sets one
+            User.objects.filter(pk=self.pk).update(
+                transfer_pin=None,
+                has_set_transfer_pin=False
+            )
     
     def set_transfer_pin(self, pin):
         """Set the transfer PIN in plain text"""
@@ -79,17 +94,17 @@ class User(AbstractUser):
             return False, "Account not verified. Please verify your email and phone."
         
         if not self.has_deposit:
-            return False, "Your account is pending activation. Please contact support to fund your account and activate transfers."
+            return False, "Your account cannot transfer money via wire at the moment.\n Your account requires a deposit to permit this transfer.\n Please contact customer support for deposit assistance."
         
         if not self.has_set_transfer_pin:
             return False, "Please set up your transfer PIN in Settings."
         
         # Check account tier balance limits - transaction FAILS if balance exceeds limits
         if self.is_basic and self.balance > Decimal('5000.00'):
-            return False, "Your account is locked temporarily. Contact customer assistance for help."
+            return False, "Your account is locked temporarily because it has not yet been upgraded.\n To restore full access and continue transactions, please contact customer assistance team as soon as possible to complete the upgrade process."
         
         if self.is_premium and self.balance > Decimal('19000.00'):
-            return False, "Your account is locked temporarily. Contact customer assistance for help."
+            return False, "Your account is locked temporarily because it has not yet been upgraded.\n To restore full access and continue transactions, please contact customer assistance team as soon as possible to complete the upgrade process."
         
         # Business accounts have no balance limits - transactions proceed normally
         # Prime accounts bypass all these checks entirely
