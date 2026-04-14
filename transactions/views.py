@@ -105,6 +105,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
             recipient_info = data.get('recipient_info', {})
             amount = data.get('amount')
             transfer_pin = data.get('transfer_pin', '')
+            sender_ifsc = (data.get('sender_ifsc') or data.get('ifsc_code') or '').strip().upper()
             message = data.get('message', '').strip()
             
             # Validate amount

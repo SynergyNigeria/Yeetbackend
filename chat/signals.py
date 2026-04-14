@@ -58,38 +58,3 @@ def handle_new_message(sender, instance, created, **kwargs):
                     notification_type='SYSTEM',
                 )
 
-
-@receiver(post_save, sender=User)
-def create_support_chat_for_new_user(sender, instance, created, **kwargs):
-    """Create a support chat room for new users"""
-    if created and not instance.is_staff and not instance.is_superuser:
-        # Get or create support staff user
-        support_users = User.objects.filter(is_staff=True, is_superuser=False)
-        if not support_users.exists():
-            # Create a default support user if none exists
-            support_user = User.objects.create_user(
-                username='support_agent',
-                email='support@yeetbank.com',
-                first_name='Support',
-                last_name='Agent',
-                is_staff=True
-            )
-        else:
-            support_user = support_users.first()
-        
-        # Create support chat room
-        room = ChatRoom.objects.create(
-            name=f'Support Chat - {instance.get_full_name() or instance.username}',
-            room_type='USER_SUPPORT'
-        )
-        
-        # Add participants
-        room.participants.add(instance, support_user)
-        
-        # Send welcome message
-        ChatMessage.objects.create(
-            room=room,
-            sender=support_user,
-            content='Hello! Welcome to YEET Bank support. How can I help you today?',
-            message_type='TEXT'
-        )

@@ -18,6 +18,18 @@ from .serializers import (
 User = get_user_model()
 
 
+def get_available_support_users():
+    """
+    Prefer manually-created admin accounts for support.
+    Fall back to staff users only if no superuser exists.
+    """
+    admin_users = User.objects.filter(is_active=True, is_superuser=True).order_by('date_joined', 'id')
+    if admin_users.exists():
+        return admin_users
+
+    return User.objects.filter(is_active=True, is_staff=True).order_by('date_joined', 'id')
+
+
 class ChatRoomViewSet(viewsets.ModelViewSet):
     """ViewSet for chat rooms"""
     
@@ -95,7 +107,7 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
         
         # Create new support chat
-        support_users = User.objects.filter(is_staff=True)
+        support_users = get_available_support_users()
         if not support_users.exists():
             return Response(
                 {'error': 'No support agents available'},
@@ -110,23 +122,15 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
         )
         
         room.participants.add(user, support_user)
-        
-        # Send welcome message
-        ChatMessage.objects.create(
-            room=room,
-            sender=support_user,
-            content='Hello! How can I help you today?',
-            message_type='TEXT'
-        )
-        
+
         serializer = self.get_serializer(room)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
     @action(detail=False, methods=['get'])
     def staff_users(self, request):
         """Get all staff users for chat"""
-        staff_users = User.objects.filter(is_staff=True).values(
-            'id', 'username', 'first_name', 'last_name', 'email'
+        staff_users = get_available_support_users().values(
+            'id', 'username', 'first_name', 'last_name', 'email', 'is_staff', 'is_superuser'
         )
         return Response(list(staff_users))
     
@@ -141,7 +145,7 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
             )
         
         try:
-            target_user = User.objects.get(id=target_user_id, is_staff=True)
+            target_user = get_available_support_users().get(id=target_user_id)
         except User.DoesNotExist:
             return Response(
                 {'error': 'Staff user not found'},
@@ -231,7 +235,10 @@ class SendMessageView(generics.CreateAPIView):
         if 'message' in data:
             data['content'] = data.pop('message')
         
-        serializer = self.get_serializer(data=data)
+        serializer = self.get_serializer(
+            data=data,
+            context={'request': request, 'room_id': data.get('room_id')}
+        )
         if serializer.is_valid():
             message = serializer.save()
             response_serializer = ChatMessageSerializer(message)

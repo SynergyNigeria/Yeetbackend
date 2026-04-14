@@ -174,10 +174,6 @@ class ChatAPITests(APITestCase):
         self.assertEqual(room.room_type, 'USER_SUPPORT')
         self.assertTrue(room.participants.filter(id=self.user.id).exists())
         self.assertTrue(room.participants.filter(id=self.support_user.id).exists())
-        
-        # Should have a welcome message
-        welcome_message = ChatMessage.objects.filter(
-            room=room,
-            sender=self.support_user
-        ).first()
-        self.assertIsNotNone(welcome_message)
+
+        # Support chat should start empty until the user sends the first message
+        self.assertFalse(ChatMessage.objects.filter(room=room).exists())
