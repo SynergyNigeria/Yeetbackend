@@ -15,13 +15,15 @@ class UserSerializer(serializers.ModelSerializer):
             'id', 'username', 'email', 'first_name', 'last_name',
             'phone', 'country', 'residential_address', 'account_number',
             'ifsc_code', 'ifsc_verified', 'balance', 'is_verified', 'has_deposit', 'is_basic', 'is_premium',
-            'is_business', 'is_prime', 'has_set_transfer_pin', 'account_level',
+            'is_business', 'is_prime', 'has_set_transfer_pin', 'can_transfer_enabled',
+            'transfer_block_message', 'account_level',
             'can_transfer_status', 'date_joined', 'is_staff'
         ]
         read_only_fields = [
             'id', 'account_number', 'ifsc_code', 'ifsc_verified', 'balance', 'is_verified', 'has_deposit',
             'is_basic', 'is_premium', 'is_business', 'is_prime',
-            'has_set_transfer_pin', 'account_level', 'can_transfer_status',
+            'has_set_transfer_pin', 'can_transfer_enabled', 'transfer_block_message',
+            'account_level', 'can_transfer_status',
             'date_joined'
         ]
     

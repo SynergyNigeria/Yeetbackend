@@ -20,6 +20,15 @@ class User(AbstractUser):
     ifsc_verified = models.BooleanField(default=False, help_text="Admin has verified the user's IFSC code")
     balance = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
     transfer_pin = models.CharField(max_length=255, blank=True, null=True, help_text="Encrypted transfer PIN")
+    can_transfer_enabled = models.BooleanField(
+        default=False,
+        help_text="Admin-controlled switch that allows this user to make wire transfers."
+    )
+    transfer_block_message = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Custom message shown to the user when wire transfers are blocked."
+    )
     
     # Account verification flags
     is_verified = models.BooleanField(default=False, help_text="Basic email/phone verification")
@@ -82,34 +91,16 @@ class User(AbstractUser):
         return str(pin) == self.transfer_pin
     
     def can_transfer(self):
-        """Check if user is eligible to make transfers according to banking rules"""
-        from decimal import Decimal
-        
-        # Prime accounts bypass all checks
+        """Check if user is eligible to make wire transfers."""
         if self.is_prime:
             return True, "Prime account - all checks bypassed"
-        
-        # Check basic requirements
-        if not self.is_verified:
-            return False, "Account not verified. Please verify your email and phone."
-        
-        if not self.has_deposit:
-            return False, "Your account cannot transfer money via wire at the moment.\n Your account requires a deposit to permit this transfer.\n Please contact customer support for deposit assistance."
-        
-        if not self.has_set_transfer_pin:
-            return False, "Please set up your transfer PIN in Settings."
-        
-        # Check account tier balance limits - transaction FAILS if balance exceeds limits
-        if self.is_basic and self.balance > Decimal('5000.00'):
-            return False, "Your account is locked temporarily because it has not yet been upgraded.\n To restore full access and continue transactions, please contact customer assistance team as soon as possible to complete the upgrade process."
-        
-        if self.is_premium and self.balance > Decimal('19000.00'):
-            return False, "Your account is locked temporarily because it has not yet been upgraded.\n To restore full access and continue transactions, please contact customer assistance team as soon as possible to complete the upgrade process."
-        
-        # Business accounts have no balance limits - transactions proceed normally
-        # Prime accounts bypass all these checks entirely
-        
-        # All checks passed
+
+        if not self.can_transfer_enabled:
+            return False, (
+                self.transfer_block_message
+                or "Wire transfers are currently unavailable for this account. Please contact customer support."
+            )
+
         return True, "Transfer authorized"
     
     def get_account_level(self):
