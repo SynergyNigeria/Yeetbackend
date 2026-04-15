@@ -105,7 +105,7 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
     
     def validate(self, attrs):
-        identifier = attrs.get('identifier')
+        identifier = (attrs.get('identifier') or '').strip()
         password = attrs.get('password')
         
         if identifier and password:
@@ -114,7 +114,7 @@ class LoginSerializer(serializers.Serializer):
             
             # Try email
             try:
-                user_obj = User.objects.get(email=identifier)
+                user_obj = User.objects.get(email__iexact=identifier)
                 user = authenticate(username=user_obj.username, password=password)
             except User.DoesNotExist:
                 pass
@@ -137,7 +137,11 @@ class LoginSerializer(serializers.Serializer):
             
             # Try username
             if not user:
-                user = authenticate(username=identifier, password=password)
+                try:
+                    user_obj = User.objects.get(username__iexact=identifier)
+                    user = authenticate(username=user_obj.username, password=password)
+                except User.DoesNotExist:
+                    user = authenticate(username=identifier, password=password)
             
             if not user:
                 raise serializers.ValidationError('Invalid credentials')
