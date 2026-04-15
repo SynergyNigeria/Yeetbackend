@@ -9,12 +9,11 @@ class CustomUserAdmin(UserAdmin):
     list_display = (
         'username', 'email', 'first_name', 'last_name', 'account_number',
         'ifsc_code', 'ifsc_verified', 'balance', 'can_transfer_enabled',
-        'account_level_display', 'is_prime', 'has_set_transfer_pin'
+        'is_prime', 'has_set_transfer_pin'
     )
 
     list_filter = (
-        'can_transfer_enabled', 'is_verified', 'has_deposit', 'is_basic', 'is_premium',
-        'is_business', 'is_prime', 'has_set_transfer_pin',
+        'can_transfer_enabled', 'is_prime', 'has_set_transfer_pin',
         'ifsc_verified', 'is_staff', 'is_active', 'date_joined'
     )
 
@@ -25,34 +24,24 @@ class CustomUserAdmin(UserAdmin):
         ('Banking Information', {
             'fields': (
                 'phone', 'country', 'residential_address', 'account_number',
-                'balance', 'transfer_pin', 'has_set_transfer_pin',
-                'can_transfer_enabled', 'transfer_block_message'
+                'balance', 'transfer_pin', 'has_set_transfer_pin'
             )
         }),
-        ('IFSC Code', {
-            'fields': ('ifsc_code', 'ifsc_verified'),
-            'description': 'IFSC code for wire transfers. Tick "IFSC verified" to reveal the code to the user.'
+        ('IFSC Verification', {
+            'fields': ('ifsc_verified', 'ifsc_code'),
+            'description': 'Tick "IFSC verified" to reveal the user\'s IFSC code on the app.'
         }),
-        ('Account Verification & Tiers', {
-            'fields': (
-                'is_verified', 'has_deposit', 'is_basic', 'is_premium',
-                'is_business', 'is_prime'
-            ),
-            'description': 'Legacy account labels. Wire transfer access is controlled by "can_transfer_enabled" and the custom block message above.'
+        ('Wire Transfer Access', {
+            'fields': ('can_transfer_enabled', 'transfer_block_message', 'is_prime'),
+            'description': 'Use "can_transfer_enabled" to allow wire transfers. If disabled, the custom block message is shown to the user. Prime bypasses all transfer restrictions.'
         }),
     )
 
     readonly_fields = ('account_number', 'ifsc_code', 'has_set_transfer_pin')
 
-    def account_level_display(self, obj):
-        return obj.get_account_level()
-
-    account_level_display.short_description = 'Account Level'
-
     actions = [
-        'verify_ifsc', 'revoke_ifsc', 'make_verified', 'make_prime',
-        'enable_transfer_access', 'disable_transfer_access',
-        'add_deposit_flag', 'reset_to_basic'
+        'verify_ifsc', 'revoke_ifsc', 'make_prime',
+        'enable_transfer_access', 'disable_transfer_access'
     ]
 
     def verify_ifsc(self, request, queryset):
@@ -79,14 +68,8 @@ class CustomUserAdmin(UserAdmin):
 
     revoke_ifsc.short_description = 'Revoke IFSC verification'
 
-    def make_verified(self, request, queryset):
-        count = queryset.update(is_verified=True)
-        self.message_user(request, f'{count} users marked as verified.')
-
-    make_verified.short_description = 'Mark as verified'
-
     def make_prime(self, request, queryset):
-        count = queryset.update(is_prime=True, is_verified=True, has_deposit=True, can_transfer_enabled=True)
+        count = queryset.update(is_prime=True, can_transfer_enabled=True)
         self.message_user(request, f'{count} users upgraded to Prime.')
 
     make_prime.short_description = 'Upgrade to Prime (bypasses all restrictions)'
@@ -102,23 +85,3 @@ class CustomUserAdmin(UserAdmin):
         self.message_user(request, f'{count} users blocked from wire transfers.')
 
     disable_transfer_access.short_description = 'Disable wire transfer access'
-
-    def add_deposit_flag(self, request, queryset):
-        count = queryset.update(has_deposit=True)
-        self.message_user(request, f'{count} users marked as having deposits.')
-
-    add_deposit_flag.short_description = 'Mark as having deposits'
-
-    def reset_to_basic(self, request, queryset):
-        count = queryset.update(
-            is_verified=False,
-            has_deposit=False,
-            is_basic=True,
-            is_premium=False,
-            is_business=False,
-            is_prime=False,
-            can_transfer_enabled=False
-        )
-        self.message_user(request, f'{count} users reset to basic accounts.')
-
-    reset_to_basic.short_description = 'Reset to basic accounts'

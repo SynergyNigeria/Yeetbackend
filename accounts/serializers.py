@@ -6,6 +6,7 @@ from .models import User
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for User model"""
     
+    ifsc_code = serializers.SerializerMethodField()
     account_level = serializers.ReadOnlyField(source='get_account_level')
     can_transfer_status = serializers.SerializerMethodField()
     
@@ -34,6 +35,19 @@ class UserSerializer(serializers.ModelSerializer):
             'eligible': can_transfer,
             'message': message
         }
+
+    def get_ifsc_code(self, obj):
+        """Only reveal IFSC codes to users after admin verification."""
+        request = self.context.get('request')
+        requester = getattr(request, 'user', None)
+
+        if obj.ifsc_verified:
+            return obj.ifsc_code
+
+        if requester and requester.is_authenticated and requester.is_staff:
+            return obj.ifsc_code
+
+        return None
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     """Serializer for user registration"""
